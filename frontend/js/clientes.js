@@ -1,137 +1,38 @@
-const formulario = document.getElementById("formCliente");
-const tabla = document.getElementById("tablaClientes");
-const mensaje = document.getElementById("mensaje");
-const botonCancelar = document.getElementById("btnCancelar");
+const form=document.getElementById("formCliente"), tabla=document.getElementById("tablaClientes"), mensaje=document.getElementById("mensajeCliente");
+let clientes=[];
 
-let clientes = [
-    {
-        id: 1,
-        cedula: "118880999",
-        nombre: "Santiago",
-        apellidos: "Zamora Fonseca",
-        correo: "santiago@email.com",
-        telefono: "88889999"
-    },
-    {
-        id: 2,
-        cedula: "207770888",
-        nombre: "Brenda",
-        apellidos: "Pérez León",
-        correo: "brenda@email.com",
-        telefono: "87778888"
-    }
-];
-
-function mostrarClientes() {
-    tabla.innerHTML = "";
-
-    clientes.forEach(function (cliente) {
-        const fila = document.createElement("tr");
-
-        fila.innerHTML = `
-            <td>${cliente.id}</td>
-            <td>${cliente.cedula}</td>
-            <td>${cliente.nombre}</td>
-            <td>${cliente.apellidos}</td>
-            <td>${cliente.correo}</td>
-            <td>${cliente.telefono}</td>
-
-            <td>
-                <button
-                    type="button"
-                    onclick="editarCliente(${cliente.id})"
-                >
-                    Editar
-                </button>
-
-                <button
-                    type="button"
-                    onclick="eliminarCliente(${cliente.id})"
-                    class="boton-eliminar"
-                >
-                    Eliminar
-                </button>
-            </td>
-        `;
-
-        tabla.appendChild(fila);
-    });
+async function cargarClientes(){
+ try{const r=await fetch("../backend/clientes/listar.php");const d=await r.json();if(!d.exito)throw new Error(d.mensaje);clientes=d.clientes;mostrar();}
+ catch(e){mensaje.textContent=e.message;}
 }
-
-formulario.addEventListener("submit", function (evento) {
-    evento.preventDefault();
-
-    const idCliente = document.getElementById("idCliente").value;
-
-    const cliente = {
-        cedula: document.getElementById("cedula").value,
-        nombre: document.getElementById("nombre").value,
-        apellidos: document.getElementById("apellidos").value,
-        correo: document.getElementById("correo").value,
-        telefono: document.getElementById("telefono").value
-    };
-
-    if (idCliente === "") {
-        cliente.id = clientes.length + 1;
-        clientes.push(cliente);
-
-        mensaje.textContent = "Cliente registrado correctamente";
-    } else {
-        const posicion = clientes.findIndex(function (item) {
-            return item.id === Number(idCliente);
-        });
-
-        clientes[posicion] = {
-            id: Number(idCliente),
-            ...cliente
-        };
-
-        mensaje.textContent = "Cliente actualizado correctamente";
-    }
-
-    limpiarFormulario();
-    mostrarClientes();
+function mostrar(){
+ tabla.innerHTML="";
+ clientes.forEach(c=>{
+  const tr=document.createElement("tr");
+  tr.innerHTML=`<td>${c.id}</td><td>${c.cedula}</td><td>${c.nombre}</td><td>${c.apellidos}</td><td>${c.correo}</td><td>${c.telefono}</td>
+  <td><button onclick="editarCliente(${c.id})">Editar</button> <button class="boton-eliminar" onclick="eliminarCliente(${c.id})">Eliminar</button></td>`;
+  tabla.appendChild(tr);
+ });
+}
+form.addEventListener("submit",async e=>{
+ e.preventDefault();
+ const id=document.getElementById("idCliente").value;
+ const datos={cedula:cedula.value.trim(),nombre:nombre.value.trim(),apellidos:apellidos.value.trim(),correo:correo.value.trim(),telefono:telefono.value.trim()};
+ const url=id===""?"../backend/clientes/crear.php":"../backend/clientes/actualizar.php";
+ if(id!=="")datos.id=Number(id);
+ try{const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(datos)});const d=await r.json();if(!d.exito)throw new Error(d.mensaje);limpiar();await cargarClientes();mensaje.textContent=d.mensaje;}
+ catch(err){mensaje.textContent=err.message;}
 });
-
-function editarCliente(id) {
-    const cliente = clientes.find(function (item) {
-        return item.id === id;
-    });
-
-    document.getElementById("idCliente").value = cliente.id;
-    document.getElementById("cedula").value = cliente.cedula;
-    document.getElementById("nombre").value = cliente.nombre;
-    document.getElementById("apellidos").value = cliente.apellidos;
-    document.getElementById("correo").value = cliente.correo;
-    document.getElementById("telefono").value = cliente.telefono;
+function editarCliente(id){
+ const c=clientes.find(x=>x.id===id); if(!c)return;
+ idCliente.value=c.id;cedula.value=c.cedula;nombre.value=c.nombre;apellidos.value=c.apellidos;correo.value=c.correo;telefono.value=c.telefono;
+ document.getElementById("tituloCliente").textContent="Editar cliente";document.getElementById("btnGuardarCliente").textContent="Actualizar cliente";
 }
-
-function eliminarCliente(id) {
-    const confirmar = confirm(
-        "¿Desea eliminar este cliente?"
-    );
-
-    if (!confirmar) {
-        return;
-    }
-
-    clientes = clientes.filter(function (cliente) {
-        return cliente.id !== id;
-    });
-
-    mensaje.textContent = "Cliente eliminado correctamente";
-
-    mostrarClientes();
+async function eliminarCliente(id){
+ if(!confirm("¿Desea eliminar este cliente?"))return;
+ try{const r=await fetch("../backend/clientes/eliminar.php",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});const d=await r.json();if(!d.exito)throw new Error(d.mensaje);await cargarClientes();mensaje.textContent=d.mensaje;}
+ catch(e){mensaje.textContent=e.message;}
 }
-
-function limpiarFormulario() {
-    formulario.reset();
-    document.getElementById("idCliente").value = "";
-}
-
-botonCancelar.addEventListener("click", function () {
-    limpiarFormulario();
-    mensaje.textContent = "";
-});
-
-mostrarClientes();
+function limpiar(){form.reset();idCliente.value="";document.getElementById("tituloCliente").textContent="Registrar cliente";document.getElementById("btnGuardarCliente").textContent="Guardar cliente";}
+document.getElementById("btnCancelarCliente").addEventListener("click",limpiar);
+cargarClientes();
