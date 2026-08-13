@@ -19,9 +19,9 @@ const tituloFormulario =
 let canchas = [];
 
 
-/* =========================================================
-   LISTAR
-========================================================= */
+/* =====================================================
+   LISTAR CANCHAS
+===================================================== */
 
 async function cargarCanchas() {
 
@@ -33,8 +33,12 @@ async function cargarCanchas() {
 
         const datos = await respuesta.json();
 
-        if (!datos.exito) {
-            throw new Error(datos.mensaje);
+        if (!respuesta.ok || !datos.exito) {
+
+            throw new Error(
+                datos.mensaje ||
+                "No se pudieron cargar las canchas."
+            );
         }
 
         canchas = datos.canchas;
@@ -43,7 +47,12 @@ async function cargarCanchas() {
 
     } catch (error) {
 
-        mostrarMensaje(
+        console.error(
+            "Error al cargar canchas:",
+            error
+        );
+
+        mostrarMensajeCancha(
             error.message,
             "error"
         );
@@ -51,9 +60,9 @@ async function cargarCanchas() {
 }
 
 
-/* =========================================================
-   MOSTRAR TABLA
-========================================================= */
+/* =====================================================
+   MOSTRAR CANCHAS
+===================================================== */
 
 function mostrarCanchas() {
 
@@ -92,7 +101,6 @@ function mostrarCanchas() {
             <td>${cancha.estado}</td>
 
             <td>
-
                 <button
                     type="button"
                     onclick="editarCancha(${cancha.id})"
@@ -107,7 +115,6 @@ function mostrarCanchas() {
                 >
                     Eliminar
                 </button>
-
             </td>
         `;
 
@@ -116,11 +123,11 @@ function mostrarCanchas() {
 }
 
 
-/* =========================================================
-   DATOS DEL FORMULARIO
-========================================================= */
+/* =====================================================
+   OBTENER DATOS
+===================================================== */
 
-function obtenerDatosFormulario() {
+function obtenerDatosCancha() {
 
     return {
 
@@ -162,16 +169,16 @@ function obtenerDatosFormulario() {
 }
 
 
-/* =========================================================
-   VALIDACIONES
-========================================================= */
+/* =====================================================
+   VALIDAR
+===================================================== */
 
 function validarCancha(cancha) {
 
     if (cancha.nombre === "") {
 
-        mostrarMensaje(
-            "Debe ingresar el nombre.",
+        mostrarMensajeCancha(
+            "Debe ingresar el nombre de la cancha.",
             "error"
         );
 
@@ -180,8 +187,8 @@ function validarCancha(cancha) {
 
     if (cancha.tipo === "") {
 
-        mostrarMensaje(
-            "Debe seleccionar el tipo.",
+        mostrarMensajeCancha(
+            "Debe seleccionar el tipo de cancha.",
             "error"
         );
 
@@ -190,7 +197,7 @@ function validarCancha(cancha) {
 
     if (cancha.superficie === "") {
 
-        mostrarMensaje(
+        mostrarMensajeCancha(
             "Debe seleccionar la superficie.",
             "error"
         );
@@ -200,7 +207,7 @@ function validarCancha(cancha) {
 
     if (cancha.capacidad <= 0) {
 
-        mostrarMensaje(
+        mostrarMensajeCancha(
             "La capacidad debe ser mayor a cero.",
             "error"
         );
@@ -210,7 +217,7 @@ function validarCancha(cancha) {
 
     if (cancha.tarifa <= 0) {
 
-        mostrarMensaje(
+        mostrarMensajeCancha(
             "La tarifa debe ser mayor a cero.",
             "error"
         );
@@ -222,9 +229,9 @@ function validarCancha(cancha) {
 }
 
 
-/* =========================================================
-   CREAR
-========================================================= */
+/* =====================================================
+   CREAR CANCHA
+===================================================== */
 
 async function registrarCancha(datosCancha) {
 
@@ -241,29 +248,40 @@ async function registrarCancha(datosCancha) {
                 },
 
                 body:
-                    JSON.stringify(datosCancha)
+                    JSON.stringify(
+                        datosCancha
+                    )
             }
         );
 
         const datos =
             await respuesta.json();
 
-        if (!datos.exito) {
-            throw new Error(datos.mensaje);
+        if (!respuesta.ok || !datos.exito) {
+
+            throw new Error(
+                datos.mensaje ||
+                "No se pudo registrar la cancha."
+            );
         }
 
         limpiarFormularioCancha();
 
         await cargarCanchas();
 
-        mostrarMensaje(
+        mostrarMensajeCancha(
             datos.mensaje,
             "exito"
         );
 
     } catch (error) {
 
-        mostrarMensaje(
+        console.error(
+            "Error al registrar cancha:",
+            error
+        );
+
+        mostrarMensajeCancha(
             error.message,
             "error"
         );
@@ -271,9 +289,9 @@ async function registrarCancha(datosCancha) {
 }
 
 
-/* =========================================================
-   ACTUALIZAR
-========================================================= */
+/* =====================================================
+   ACTUALIZAR CANCHA
+===================================================== */
 
 async function actualizarCancha(
     id,
@@ -292,32 +310,42 @@ async function actualizarCancha(
                         "application/json"
                 },
 
-                body: JSON.stringify({
-                    id: id,
-                    ...datosCancha
-                })
+                body:
+                    JSON.stringify({
+                        id: id,
+                        ...datosCancha
+                    })
             }
         );
 
         const datos =
             await respuesta.json();
 
-        if (!datos.exito) {
-            throw new Error(datos.mensaje);
+        if (!respuesta.ok || !datos.exito) {
+
+            throw new Error(
+                datos.mensaje ||
+                "No se pudo actualizar la cancha."
+            );
         }
 
         limpiarFormularioCancha();
 
         await cargarCanchas();
 
-        mostrarMensaje(
+        mostrarMensajeCancha(
             datos.mensaje,
             "exito"
         );
 
     } catch (error) {
 
-        mostrarMensaje(
+        console.error(
+            "Error al actualizar cancha:",
+            error
+        );
+
+        mostrarMensajeCancha(
             error.message,
             "error"
         );
@@ -325,49 +353,89 @@ async function actualizarCancha(
 }
 
 
-/* =========================================================
+/* =====================================================
+   SUBMIT
+===================================================== */
+
+formularioCancha.addEventListener(
+    "submit",
+    async function (evento) {
+
+        evento.preventDefault();
+
+        const idCancha =
+            document
+                .getElementById("idCancha")
+                .value;
+
+        const datosCancha =
+            obtenerDatosCancha();
+
+        if (!validarCancha(datosCancha)) {
+            return;
+        }
+
+        if (idCancha === "") {
+
+            await registrarCancha(
+                datosCancha
+            );
+
+        } else {
+
+            await actualizarCancha(
+                Number(idCancha),
+                datosCancha
+            );
+        }
+    }
+);
+
+
+/* =====================================================
    EDITAR
-========================================================= */
+===================================================== */
 
 function editarCancha(id) {
 
-    const cancha = canchas.find(
-        function (item) {
-            return item.id === id;
-        }
-    );
+    const cancha =
+        canchas.find(
+            function (item) {
+                return item.id === id;
+            }
+        );
 
     if (!cancha) {
         return;
     }
 
-    document.getElementById(
-        "idCancha"
-    ).value = cancha.id;
+    document
+        .getElementById("idCancha")
+        .value = cancha.id;
 
-    document.getElementById(
-        "nombreCancha"
-    ).value = cancha.nombre;
+    document
+        .getElementById("nombreCancha")
+        .value = cancha.nombre;
 
-    document.getElementById(
-        "tipo"
-    ).value = cancha.tipo;
+    document
+        .getElementById("tipo")
+        .value = cancha.tipo;
 
-    document.getElementById(
-        "superficie"
-    ).value = cancha.superficie;
+    document
+        .getElementById("superficie")
+        .value = cancha.superficie;
 
-    document.getElementById(
-        "capacidad"
-    ).value = cancha.capacidad;
+    document
+        .getElementById("capacidad")
+        .value = cancha.capacidad;
 
-    document.getElementById(
-        "tarifa"
-    ).value = cancha.tarifa;
+    document
+        .getElementById("tarifa")
+        .value = cancha.tarifa;
 
-    document.getElementById(
-        "estado"
-    ).value = cancha.estado;
+    document
+        .getElementById("estado")
+        .value = cancha.estado;
 
     tituloFormulario.textContent =
         "Editar cancha";
@@ -382,17 +450,18 @@ function editarCancha(id) {
 }
 
 
-/* =========================================================
+/* =====================================================
    ELIMINAR
-========================================================= */
+===================================================== */
 
 async function eliminarCancha(id) {
 
-    const cancha = canchas.find(
-        function (item) {
-            return item.id === id;
-        }
-    );
+    const cancha =
+        canchas.find(
+            function (item) {
+                return item.id === id;
+            }
+        );
 
     if (!cancha) {
         return;
@@ -418,31 +487,39 @@ async function eliminarCancha(id) {
                         "application/json"
                 },
 
-                body: JSON.stringify({
-                    id: id
-                })
+                body:
+                    JSON.stringify({
+                        id: id
+                    })
             }
         );
 
         const datos =
             await respuesta.json();
 
-        if (!datos.exito) {
-            throw new Error(datos.mensaje);
-        }
+        if (!respuesta.ok || !datos.exito) {
 
-        limpiarFormularioCancha();
+            throw new Error(
+                datos.mensaje ||
+                "No se pudo eliminar la cancha."
+            );
+        }
 
         await cargarCanchas();
 
-        mostrarMensaje(
+        mostrarMensajeCancha(
             datos.mensaje,
             "exito"
         );
 
     } catch (error) {
 
-        mostrarMensaje(
+        console.error(
+            "Error al eliminar cancha:",
+            error
+        );
+
+        mostrarMensajeCancha(
             error.message,
             "error"
         );
@@ -450,60 +527,21 @@ async function eliminarCancha(id) {
 }
 
 
-/* =========================================================
-   SUBMIT
-========================================================= */
-
-formularioCancha.addEventListener(
-    "submit",
-    async function (evento) {
-
-        evento.preventDefault();
-
-        const idCancha =
-            document
-                .getElementById("idCancha")
-                .value;
-
-        const datosCancha =
-            obtenerDatosFormulario();
-
-        if (!validarCancha(datosCancha)) {
-            return;
-        }
-
-        if (idCancha === "") {
-
-            await registrarCancha(
-                datosCancha
-            );
-
-        } else {
-
-            await actualizarCancha(
-                Number(idCancha),
-                datosCancha
-            );
-        }
-    }
-);
-
-
-/* =========================================================
-   LIMPIAR
-========================================================= */
+/* =====================================================
+   LIMPIAR FORMULARIO
+===================================================== */
 
 function limpiarFormularioCancha() {
 
     formularioCancha.reset();
 
-    document.getElementById(
-        "idCancha"
-    ).value = "";
+    document
+        .getElementById("idCancha")
+        .value = "";
 
-    document.getElementById(
-        "estado"
-    ).value = "ACTIVA";
+    document
+        .getElementById("estado")
+        .value = "ACTIVA";
 
     tituloFormulario.textContent =
         "Registrar cancha";
@@ -513,11 +551,11 @@ function limpiarFormularioCancha() {
 }
 
 
-/* =========================================================
+/* =====================================================
    MENSAJES
-========================================================= */
+===================================================== */
 
-function mostrarMensaje(
+function mostrarMensajeCancha(
     texto,
     tipo
 ) {
@@ -530,9 +568,9 @@ function mostrarMensaje(
 }
 
 
-/* =========================================================
+/* =====================================================
    CANCELAR
-========================================================= */
+===================================================== */
 
 btnCancelarCancha.addEventListener(
     "click",
@@ -546,8 +584,8 @@ btnCancelarCancha.addEventListener(
 );
 
 
-/* =========================================================
+/* =====================================================
    INICIO
-========================================================= */
+===================================================== */
 
 cargarCanchas();

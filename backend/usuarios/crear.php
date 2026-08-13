@@ -10,30 +10,75 @@ $datos = json_decode(
 );
 
 if (
-    !isset($datos["cedula"]) ||
     !isset($datos["nombre"]) ||
     !isset($datos["apellidos"]) ||
     !isset($datos["correo"]) ||
-    !isset($datos["telefono"])
+    !isset($datos["contrasena"]) ||
+    !isset($datos["rol"]) ||
+    !isset($datos["estado"])
 ) {
+
     echo json_encode([
         "exito" => false,
-        "mensaje" => "Faltan datos del cliente."
+        "mensaje" => "Faltan datos del usuario."
     ]);
 
     exit;
 }
 
-$cedula = trim($datos["cedula"]);
 $nombre = trim($datos["nombre"]);
 $apellidos = trim($datos["apellidos"]);
 $correo = trim($datos["correo"]);
-$telefono = trim($datos["telefono"]);
+$contrasena = $datos["contrasena"];
+$rol = strtoupper($datos["rol"]);
+$estado = strtoupper($datos["estado"]);
+
+if (
+    $nombre === "" ||
+    $apellidos === "" ||
+    $correo === "" ||
+    $contrasena === ""
+) {
+
+    echo json_encode([
+        "exito" => false,
+        "mensaje" => "Todos los campos son obligatorios."
+    ]);
+
+    exit;
+}
+
+if (
+    $rol !== "ADMINISTRADOR" &&
+    $rol !== "RECEPCIONISTA"
+) {
+
+    echo json_encode([
+        "exito" => false,
+        "mensaje" => "Rol no válido."
+    ]);
+
+    exit;
+}
+
+if (
+    $estado !== "ACTIVO" &&
+    $estado !== "INACTIVO"
+) {
+
+    echo json_encode([
+        "exito" => false,
+        "mensaje" => "Estado no válido."
+    ]);
+
+    exit;
+}
 
 $sqlId = "
     SELECT
-        NVL(MAX(ID_CLIENTE), 0) + 1 AS NUEVO_ID
-    FROM CLIENTE
+        NVL(MAX(ID_USUARIO), 0) + 1
+        AS NUEVO_ID
+    FROM USUARIO_SISTEMA
 ";
 
 $sentenciaId = oci_parse(
@@ -41,18 +86,7 @@ $sentenciaId = oci_parse(
     $sqlId
 );
 
-if (!oci_execute($sentenciaId)) {
-
-    $error = oci_error($sentenciaId);
-
-    echo json_encode([
-        "exito" => false,
-        "mensaje" => "No se pudo generar el ID del cliente.",
-        "error" => $error["message"]
-    ]);
-
-    exit;
-}
+oci_execute($sentenciaId);
 
 $filaId = oci_fetch_assoc(
     $sentenciaId
@@ -61,21 +95,23 @@ $filaId = oci_fetch_assoc(
 $nuevoId = $filaId["NUEVO_ID"];
 
 $sql = "
-    INSERT INTO CLIENTE (
-        ID_CLIENTE,
-        CEDULA,
+    INSERT INTO USUARIO_SISTEMA (
+        ID_USUARIO,
         NOMBRE,
         APELLIDOS,
         CORREO,
-        TELEFONO
+        CONTRASENA,
+        ROL,
+        ESTADO
     )
     VALUES (
         :id,
-        :cedula,
         :nombre,
         :apellidos,
         :correo,
-        :telefono
+        :contrasena,
+        :rol,
+        :estado
     )
 ";
 
@@ -88,12 +124,6 @@ oci_bind_by_name(
     $sentencia,
     ":id",
     $nuevoId
-);
-
-oci_bind_by_name(
-    $sentencia,
-    ":cedula",
-    $cedula
 );
 
 oci_bind_by_name(
@@ -116,8 +146,20 @@ oci_bind_by_name(
 
 oci_bind_by_name(
     $sentencia,
-    ":telefono",
-    $telefono
+    ":contrasena",
+    $contrasena
+);
+
+oci_bind_by_name(
+    $sentencia,
+    ":rol",
+    $rol
+);
+
+oci_bind_by_name(
+    $sentencia,
+    ":estado",
+    $estado
 );
 
 $resultado = oci_execute(
@@ -131,7 +173,7 @@ if (!$resultado) {
 
     echo json_encode([
         "exito" => false,
-        "mensaje" => "No se pudo registrar el cliente.",
+        "mensaje" => "No se pudo registrar el usuario.",
         "error" => $error["message"]
     ]);
 
@@ -140,7 +182,7 @@ if (!$resultado) {
 
 echo json_encode([
     "exito" => true,
-    "mensaje" => "Cliente registrado correctamente.",
+    "mensaje" => "Usuario registrado correctamente.",
     "id" => (int) $nuevoId
 ]);
 

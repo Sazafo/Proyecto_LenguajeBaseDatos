@@ -1,258 +1,543 @@
-const formularioReserva = document.getElementById("formReserva");
-const tablaReservas = document.getElementById("tablaReservas");
-const mensajeReserva = document.getElementById("mensajeReserva");
-const btnCancelarReserva = document.getElementById(
-    "btnCancelarReserva"
-);
+const formularioReserva =
+    document.getElementById("formReserva");
 
-const clienteReserva = document.getElementById("clienteReserva");
-const canchaReserva = document.getElementById("canchaReserva");
-const fechaReserva = document.getElementById("fechaReserva");
-const horaInicio = document.getElementById("horaInicio");
-const horaFin = document.getElementById("horaFin");
-const estadoReserva = document.getElementById("estadoReserva");
-const totalReserva = document.getElementById("totalReserva");
+const tablaReservas =
+    document.getElementById("tablaReservas");
 
-let reservas = [
-    {
-        id: 1,
-        idCliente: 1,
-        cliente: "Santiago Zamora Fonseca",
-        idCancha: 1,
-        cancha: "Cancha Central",
-        fecha: "2026-07-20",
-        horaInicio: "18:00",
-        horaFin: "20:00",
-        total: 50000,
-        estado: "CONFIRMADA"
+const mensajeReserva =
+    document.getElementById("mensajeReserva");
+
+const btnCancelarEdicion =
+    document.getElementById("btnCancelarEdicion");
+
+const btnGuardarReserva =
+    document.getElementById("btnGuardarReserva");
+
+const tituloReserva =
+    document.getElementById("tituloReserva");
+
+const clienteReserva =
+    document.getElementById("clienteReserva");
+
+const canchaReserva =
+    document.getElementById("canchaReserva");
+
+const inicioReserva =
+    document.getElementById("inicioReserva");
+
+const finReserva =
+    document.getElementById("finReserva");
+
+const estadoReserva =
+    document.getElementById("estadoReserva");
+
+let reservas = [];
+
+
+/* =====================================================
+   CARGAR CLIENTES Y CANCHAS
+===================================================== */
+
+async function cargarOpcionesReserva() {
+
+    try {
+
+        const respuesta = await fetch(
+            "../backend/reservas/opciones.php"
+        );
+
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok || !datos.exito) {
+
+            throw new Error(
+                datos.mensaje ||
+                "No se pudieron cargar las opciones."
+            );
+        }
+
+
+        clienteReserva.innerHTML =
+            `<option value="">
+                Seleccione un cliente
+            </option>`;
+
+
+        datos.clientes.forEach(
+            function (cliente) {
+
+                const opcion =
+                    document.createElement("option");
+
+                opcion.value =
+                    cliente.id;
+
+                opcion.textContent =
+                    cliente.nombre;
+
+                clienteReserva.appendChild(
+                    opcion
+                );
+            }
+        );
+
+
+        canchaReserva.innerHTML =
+            `<option value="">
+                Seleccione una cancha
+            </option>`;
+
+
+        datos.canchas.forEach(
+            function (cancha) {
+
+                const opcion =
+                    document.createElement("option");
+
+                opcion.value =
+                    cancha.id;
+
+                opcion.textContent =
+                    `${cancha.nombre} (${cancha.estado})`;
+
+                canchaReserva.appendChild(
+                    opcion
+                );
+            }
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Error al cargar opciones:",
+            error
+        );
+
+        mostrarMensajeReserva(
+            error.message,
+            "error"
+        );
     }
-];
+}
+
+
+/* =====================================================
+   LISTAR RESERVAS
+===================================================== */
+
+async function cargarReservas() {
+
+    try {
+
+        const respuesta = await fetch(
+            "../backend/reservas/listar.php"
+        );
+
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok || !datos.exito) {
+
+            throw new Error(
+                datos.mensaje ||
+                "No se pudieron cargar las reservas."
+            );
+        }
+
+        reservas = datos.reservas;
+
+        mostrarReservas();
+
+    } catch (error) {
+
+        console.error(
+            "Error al cargar reservas:",
+            error
+        );
+
+        mostrarMensajeReserva(
+            error.message,
+            "error"
+        );
+    }
+}
+
+
+/* =====================================================
+   MOSTRAR RESERVAS
+===================================================== */
 
 function mostrarReservas() {
+
     tablaReservas.innerHTML = "";
 
-    reservas.forEach(function (reserva) {
-        const fila = document.createElement("tr");
+    if (reservas.length === 0) {
 
-        fila.innerHTML = `
-            <td>${reserva.id}</td>
-            <td>${reserva.cliente}</td>
-            <td>${reserva.cancha}</td>
-            <td>${formatearFecha(reserva.fecha)}</td>
-            <td>
-                ${reserva.horaInicio} - ${reserva.horaFin}
-            </td>
-            <td>
-                ₡${Number(reserva.total).toLocaleString()}
-            </td>
-            <td>${reserva.estado}</td>
-
-            <td>
-                <button
-                    type="button"
-                    onclick="editarReserva(${reserva.id})"
-                >
-                    Editar
-                </button>
-
-                <button
-                    type="button"
-                    class="boton-eliminar"
-                    onclick="eliminarReserva(${reserva.id})"
-                >
-                    Eliminar
-                </button>
-            </td>
+        tablaReservas.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    No existen reservas registradas.
+                </td>
+            </tr>
         `;
 
-        tablaReservas.appendChild(fila);
-    });
+        return;
+    }
+
+    reservas.forEach(
+        function (reserva) {
+
+            const fila =
+                document.createElement("tr");
+
+            fila.innerHTML = `
+                <td>${reserva.id}</td>
+
+                <td>${reserva.cliente}</td>
+
+                <td>${reserva.cancha}</td>
+
+                <td>
+                    ${reserva.fecha_inicio}
+                </td>
+
+                <td>
+                    ${reserva.fecha_fin}
+                </td>
+
+                <td>
+                    ${reserva.estado}
+                </td>
+
+                <td>
+
+                    <button
+                        type="button"
+                        onclick="editarReserva(${reserva.id})"
+                    >
+                        Editar
+                    </button>
+
+                    <button
+                        type="button"
+                        class="boton-eliminar"
+                        onclick="cancelarReserva(${reserva.id})"
+                    >
+                        Cancelar
+                    </button>
+
+                </td>
+            `;
+
+            tablaReservas.appendChild(
+                fila
+            );
+        }
+    );
 }
 
-function calcularTotalReserva() {
-    const opcionCancha =
-        canchaReserva.options[canchaReserva.selectedIndex];
 
-    const tarifa = Number(
-        opcionCancha?.dataset.tarifa || 0
-    );
+/* =====================================================
+   OBTENER DATOS
+===================================================== */
+
+function obtenerDatosReserva() {
+
+    return {
+
+        id_cliente:
+            Number(
+                clienteReserva.value
+            ),
+
+        id_cancha:
+            Number(
+                canchaReserva.value
+            ),
+
+        fecha_inicio:
+            inicioReserva.value,
+
+        fecha_fin:
+            finReserva.value,
+
+        estado:
+            estadoReserva.value
+    };
+}
+
+
+/* =====================================================
+   VALIDAR
+===================================================== */
+
+function validarReserva(reserva) {
 
     if (
-        tarifa === 0 ||
-        horaInicio.value === "" ||
-        horaFin.value === ""
+        !reserva.id_cliente ||
+        !reserva.id_cancha
     ) {
-        totalReserva.value = "";
-        return 0;
+
+        mostrarMensajeReserva(
+            "Debe seleccionar cliente y cancha.",
+            "error"
+        );
+
+        return false;
     }
 
-    const inicio = convertirHoraAMinutos(horaInicio.value);
-    const fin = convertirHoraAMinutos(horaFin.value);
+    if (
+        reserva.fecha_inicio === "" ||
+        reserva.fecha_fin === ""
+    ) {
+
+        mostrarMensajeReserva(
+            "Debe seleccionar las fechas.",
+            "error"
+        );
+
+        return false;
+    }
+
+    const inicio =
+        new Date(
+            reserva.fecha_inicio
+        );
+
+    const fin =
+        new Date(
+            reserva.fecha_fin
+        );
 
     if (fin <= inicio) {
-        totalReserva.value = "";
-        return 0;
+
+        mostrarMensajeReserva(
+            "La fecha final debe ser posterior a la inicial.",
+            "error"
+        );
+
+        return false;
     }
 
-    const cantidadHoras = (fin - inicio) / 60;
-    const total = tarifa * cantidadHoras;
-
-    totalReserva.value =
-        "₡" + Number(total).toLocaleString();
-
-    return total;
+    return true;
 }
 
-function convertirHoraAMinutos(hora) {
-    const partes = hora.split(":");
-    const horas = Number(partes[0]);
-    const minutos = Number(partes[1]);
 
-    return horas * 60 + minutos;
-}
+/* =====================================================
+   CREAR RESERVA
+===================================================== */
 
-function existeCruceHorario(
-    idCancha,
-    fecha,
-    inicio,
-    fin,
-    idReservaActual
+async function registrarReserva(
+    datosReserva
 ) {
-    const inicioNuevo = convertirHoraAMinutos(inicio);
-    const finNuevo = convertirHoraAMinutos(fin);
 
-    return reservas.some(function (reserva) {
-        if (reserva.id === idReservaActual) {
-            return false;
+    try {
+
+        const respuesta = await fetch(
+            "../backend/reservas/crear.php",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body:
+                    JSON.stringify(
+                        datosReserva
+                    )
+            }
+        );
+
+        const datos =
+            await respuesta.json();
+
+        if (!respuesta.ok || !datos.exito) {
+
+            throw new Error(
+                datos.mensaje ||
+                "No se pudo registrar la reserva."
+            );
         }
+
+        limpiarFormularioReserva();
+
+        await cargarReservas();
+
+        mostrarMensajeReserva(
+            datos.mensaje,
+            "exito"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Error al registrar reserva:",
+            error
+        );
+
+        mostrarMensajeReserva(
+            error.message,
+            "error"
+        );
+    }
+}
+
+
+/* =====================================================
+   ACTUALIZAR RESERVA
+===================================================== */
+
+async function actualizarReserva(
+    id,
+    datosReserva
+) {
+
+    try {
+
+        const respuesta = await fetch(
+            "../backend/reservas/actualizar.php",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body:
+                    JSON.stringify({
+                        id: id,
+                        ...datosReserva
+                    })
+            }
+        );
+
+        const datos =
+            await respuesta.json();
+
+        if (!respuesta.ok || !datos.exito) {
+
+            throw new Error(
+                datos.mensaje ||
+                "No se pudo actualizar la reserva."
+            );
+        }
+
+        limpiarFormularioReserva();
+
+        await cargarReservas();
+
+        mostrarMensajeReserva(
+            datos.mensaje,
+            "exito"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Error al actualizar reserva:",
+            error
+        );
+
+        mostrarMensajeReserva(
+            error.message,
+            "error"
+        );
+    }
+}
+
+
+/* =====================================================
+   SUBMIT
+===================================================== */
+
+formularioReserva.addEventListener(
+    "submit",
+    async function (evento) {
+
+        evento.preventDefault();
+
+        const idReserva =
+            document
+                .getElementById(
+                    "idReserva"
+                )
+                .value;
+
+        const datosReserva =
+            obtenerDatosReserva();
 
         if (
-            reserva.idCancha !== idCancha ||
-            reserva.fecha !== fecha ||
-            reserva.estado === "CANCELADA"
+            !validarReserva(
+                datosReserva
+            )
         ) {
-            return false;
+            return;
         }
 
-        const inicioExistente = convertirHoraAMinutos(
-            reserva.horaInicio
-        );
+        if (idReserva === "") {
 
-        const finExistente = convertirHoraAMinutos(
-            reserva.horaFin
-        );
+            await registrarReserva(
+                datosReserva
+            );
 
-        return (
-            inicioNuevo < finExistente &&
-            finNuevo > inicioExistente
-        );
-    });
-}
+        } else {
 
-formularioReserva.addEventListener("submit", function (evento) {
-    evento.preventDefault();
-
-    const idReserva = Number(
-        document.getElementById("idReserva").value
-    );
-
-    const idCliente = Number(clienteReserva.value);
-    const idCancha = Number(canchaReserva.value);
-
-    const nombreCliente =
-        clienteReserva.options[
-            clienteReserva.selectedIndex
-        ].text.trim();
-
-    const nombreCancha =
-        canchaReserva.options[
-            canchaReserva.selectedIndex
-        ].text.trim();
-
-    const total = calcularTotalReserva();
-
-    if (horaFin.value <= horaInicio.value) {
-        mensajeReserva.textContent =
-            "La hora de finalización debe ser mayor a la hora de inicio";
-        return;
+            await actualizarReserva(
+                Number(idReserva),
+                datosReserva
+            );
+        }
     }
+);
 
-    const cruce = existeCruceHorario(
-        idCancha,
-        fechaReserva.value,
-        horaInicio.value,
-        horaFin.value,
-        idReserva
-    );
 
-    if (cruce) {
-        mensajeReserva.textContent =
-            "La cancha ya está reservada en ese horario";
-        return;
-    }
-
-    const datosReserva = {
-        idCliente: idCliente,
-        cliente: nombreCliente,
-        idCancha: idCancha,
-        cancha: nombreCancha,
-        fecha: fechaReserva.value,
-        horaInicio: horaInicio.value,
-        horaFin: horaFin.value,
-        total: total,
-        estado: estadoReserva.value
-    };
-
-    if (!idReserva) {
-        datosReserva.id = obtenerNuevoIdReserva();
-        reservas.push(datosReserva);
-
-        mensajeReserva.textContent =
-            "Reserva registrada correctamente";
-    } else {
-        const posicion = reservas.findIndex(function (reserva) {
-            return reserva.id === idReserva;
-        });
-
-        reservas[posicion] = {
-            id: idReserva,
-            ...datosReserva
-        };
-
-        mensajeReserva.textContent =
-            "Reserva actualizada correctamente";
-    }
-
-    limpiarFormularioReserva();
-    mostrarReservas();
-});
-
-function obtenerNuevoIdReserva() {
-    if (reservas.length === 0) {
-        return 1;
-    }
-
-    const ids = reservas.map(function (reserva) {
-        return reserva.id;
-    });
-
-    return Math.max(...ids) + 1;
-}
+/* =====================================================
+   EDITAR
+===================================================== */
 
 function editarReserva(id) {
-    const reserva = reservas.find(function (item) {
-        return item.id === id;
-    });
 
-    document.getElementById("idReserva").value = reserva.id;
-    clienteReserva.value = reserva.idCliente;
-    canchaReserva.value = reserva.idCancha;
-    fechaReserva.value = reserva.fecha;
-    horaInicio.value = reserva.horaInicio;
-    horaFin.value = reserva.horaFin;
-    estadoReserva.value = reserva.estado;
+    const reserva =
+        reservas.find(
+            function (item) {
+                return item.id === id;
+            }
+        );
 
-    calcularTotalReserva();
+    if (!reserva) {
+        return;
+    }
+
+    document.getElementById(
+        "idReserva"
+    ).value = reserva.id;
+
+    clienteReserva.value =
+        reserva.id_cliente;
+
+    canchaReserva.value =
+        reserva.id_cancha;
+
+    inicioReserva.value =
+        convertirFechaInput(
+            reserva.fecha_inicio
+        );
+
+    finReserva.value =
+        convertirFechaInput(
+            reserva.fecha_fin
+        );
+
+    estadoReserva.value =
+        reserva.estado;
+
+    tituloReserva.textContent =
+        "Editar reserva";
+
+    btnGuardarReserva.textContent =
+        "Actualizar reserva";
 
     window.scrollTo({
         top: 0,
@@ -260,60 +545,163 @@ function editarReserva(id) {
     });
 }
 
-function eliminarReserva(id) {
+
+/* =====================================================
+   CONVERTIR FECHA PARA DATETIME-LOCAL
+===================================================== */
+
+function convertirFechaInput(fecha) {
+
+    if (!fecha) {
+        return "";
+    }
+
+    return fecha
+        .replace(" ", "T")
+        .substring(0, 16);
+}
+
+
+/* =====================================================
+   CANCELAR RESERVA
+===================================================== */
+
+async function cancelarReserva(id) {
+
+    const reserva =
+        reservas.find(
+            function (item) {
+                return item.id === id;
+            }
+        );
+
+    if (!reserva) {
+        return;
+    }
+
     const confirmar = confirm(
-        "¿Desea eliminar esta reserva?"
+        `¿Desea cancelar la reserva #${reserva.id}?`
     );
 
     if (!confirmar) {
         return;
     }
 
-    reservas = reservas.filter(function (reserva) {
-        return reserva.id !== id;
-    });
+    try {
 
-    mensajeReserva.textContent =
-        "Reserva eliminada correctamente";
+        const respuesta = await fetch(
+            "../backend/reservas/cancelar.php",
+            {
+                method: "POST",
 
-    mostrarReservas();
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body:
+                    JSON.stringify({
+                        id: id
+                    })
+            }
+        );
+
+        const datos =
+            await respuesta.json();
+
+        if (!respuesta.ok || !datos.exito) {
+
+            throw new Error(
+                datos.mensaje ||
+                "No se pudo cancelar la reserva."
+            );
+        }
+
+        await cargarReservas();
+
+        mostrarMensajeReserva(
+            datos.mensaje,
+            "exito"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Error al cancelar reserva:",
+            error
+        );
+
+        mostrarMensajeReserva(
+            error.message,
+            "error"
+        );
+    }
 }
+
+
+/* =====================================================
+   LIMPIAR
+===================================================== */
 
 function limpiarFormularioReserva() {
+
     formularioReserva.reset();
 
-    document.getElementById("idReserva").value = "";
-    totalReserva.value = "";
-    estadoReserva.value = "PENDIENTE";
+    document.getElementById(
+        "idReserva"
+    ).value = "";
+
+    estadoReserva.value =
+        "PENDIENTE";
+
+    tituloReserva.textContent =
+        "Registrar reserva";
+
+    btnGuardarReserva.textContent =
+        "Guardar reserva";
 }
 
-function formatearFecha(fecha) {
-    const partes = fecha.split("-");
 
-    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+/* =====================================================
+   MENSAJES
+===================================================== */
+
+function mostrarMensajeReserva(
+    texto,
+    tipo
+) {
+
+    mensajeReserva.textContent =
+        texto;
+
+    mensajeReserva.className =
+        tipo;
 }
 
-canchaReserva.addEventListener(
-    "change",
-    calcularTotalReserva
-);
 
-horaInicio.addEventListener(
-    "change",
-    calcularTotalReserva
-);
+/* =====================================================
+   CANCELAR EDICIÓN
+===================================================== */
 
-horaFin.addEventListener(
-    "change",
-    calcularTotalReserva
-);
-
-btnCancelarReserva.addEventListener(
+btnCancelarEdicion.addEventListener(
     "click",
     function () {
+
         limpiarFormularioReserva();
-        mensajeReserva.textContent = "";
+
+        mensajeReserva.textContent =
+            "";
+
+        mensajeReserva.className =
+            "";
     }
 );
 
-mostrarReservas();
+
+/* =====================================================
+   INICIO
+===================================================== */
+
+cargarOpcionesReserva();
+
+cargarReservas();
