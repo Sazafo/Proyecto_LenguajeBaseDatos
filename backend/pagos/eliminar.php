@@ -6,43 +6,37 @@ require_once "../config/conexion.php";
 
 $d = json_decode(file_get_contents("php://input"), true);
 
-// Validar que se haya recibido el ID
 if (!isset($d["id"])) {
     echo json_encode([
         "exito" => false,
-        "mensaje" => "No se recibió el ID de la reserva."
+        "mensaje" => "No se recibió el ID del pago."
     ]);
-
     exit;
 }
 
-// Cancelar la reserva
-$sql = "UPDATE RESERVA
-        SET ESTADO = 'CANCELADA'
-        WHERE ID_RESERVA = :id";
+$sql = "DELETE FROM PAGO 
+        WHERE ID_PAGO = :id";
 
 $s = oci_parse($conexion, $sql);
 
 oci_bind_by_name($s, ":id", $d["id"]);
 
-// Ejecutar actualización
 if (!oci_execute($s, OCI_COMMIT_ON_SUCCESS)) {
 
     $e = oci_error($s);
 
     echo json_encode([
         "exito" => false,
-        "mensaje" => "No se pudo cancelar la reserva.",
+        "mensaje" => "No se pudo eliminar el pago.",
         "error" => $e["message"]
     ]);
 
     exit;
 }
 
-// Respuesta exitosa
 echo json_encode([
     "exito" => true,
-    "mensaje" => "Reserva cancelada correctamente."
+    "mensaje" => "Pago eliminado correctamente."
 ]);
 
 oci_free_statement($s);

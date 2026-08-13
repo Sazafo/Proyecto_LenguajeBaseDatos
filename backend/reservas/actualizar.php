@@ -8,20 +8,22 @@ $d = json_decode(file_get_contents("php://input"), true);
 
 // Validar datos requeridos
 if (!isset(
+    $d["id"],
     $d["id_cliente"],
     $d["id_cancha"],
     $d["fecha_inicio"],
-    $d["fecha_fin"]
+    $d["fecha_fin"],
+    $d["estado"]
 )) {
     echo json_encode([
         "exito" => false,
-        "mensaje" => "Faltan datos de la reserva."
+        "mensaje" => "Faltan datos para actualizar."
     ]);
 
     exit;
 }
 
-// Validar fechas
+// Validar que la fecha final sea posterior a la inicial
 if (strtotime($d["fecha_fin"]) <= strtotime($d["fecha_inicio"])) {
     echo json_encode([
         "exito" => false,
@@ -31,58 +33,36 @@ if (strtotime($d["fecha_fin"]) <= strtotime($d["fecha_inicio"])) {
     exit;
 }
 
-// Obtener el siguiente ID de reserva
-$sqlId = "SELECT NVL(MAX(ID_RESERVA), 0) + 1 AS NUEVO_ID
-          FROM RESERVA";
-
-$sId = oci_parse($conexion, $sqlId);
-oci_execute($sId);
-
-$f = oci_fetch_assoc($sId);
-$id = $f["NUEVO_ID"];
-
-// Convertir formato de fecha
+// Convertir formato de fecha recibido
 $fi = str_replace("T", " ", $d["fecha_inicio"]);
 $ff = str_replace("T", " ", $d["fecha_fin"]);
 
-// Estado por defecto
-$estado = isset($d["estado"]) ? $d["estado"] : "PENDIENTE";
-
-// Insertar la reserva
-$sql = "INSERT INTO RESERVA (
-            ID_RESERVA,
-            ID_CLIENTE,
-            ID_CANCHA,
-            FECHA_INICIO,
-            FECHA_FIN,
-            ESTADO
-        )
-        VALUES (
-            :id,
-            :cliente,
-            :cancha,
-            TO_DATE(:fi, 'YYYY-MM-DD HH24:MI'),
-            TO_DATE(:ff, 'YYYY-MM-DD HH24:MI'),
-            :estado
-        )";
+// Actualizar la reserva
+$sql = "UPDATE RESERVA
+        SET ID_CLIENTE = :cliente,
+            ID_CANCHA = :cancha,
+            FECHA_INICIO = TO_DATE(:fi, 'YYYY-MM-DD HH24:MI'),
+            FECHA_FIN = TO_DATE(:ff, 'YYYY-MM-DD HH24:MI'),
+            ESTADO = :estado
+        WHERE ID_RESERVA = :id";
 
 $s = oci_parse($conexion, $sql);
 
-oci_bind_by_name($s, ":id", $id);
 oci_bind_by_name($s, ":cliente", $d["id_cliente"]);
 oci_bind_by_name($s, ":cancha", $d["id_cancha"]);
 oci_bind_by_name($s, ":fi", $fi);
 oci_bind_by_name($s, ":ff", $ff);
-oci_bind_by_name($s, ":estado", $estado);
+oci_bind_by_name($s, ":estado", $d["estado"]);
+oci_bind_by_name($s, ":id", $d["id"]);
 
-// Ejecutar inserción
+// Ejecutar actualización
 if (!oci_execute($s, OCI_COMMIT_ON_SUCCESS)) {
 
     $e = oci_error($s);
 
     echo json_encode([
         "exito" => false,
-        "mensaje" => "No se pudo registrar la reserva.",
+        "mensaje" => "No se pudo actualizar la reserva.",
         "error" => $e["message"]
     ]);
 
@@ -92,11 +72,9 @@ if (!oci_execute($s, OCI_COMMIT_ON_SUCCESS)) {
 // Respuesta exitosa
 echo json_encode([
     "exito" => true,
-    "mensaje" => "Reserva registrada correctamente.",
-    "id" => (int) $id
+    "mensaje" => "Reserva actualizada correctamente."
 ]);
 
-oci_free_statement($sId);
 oci_free_statement($s);
 oci_close($conexion);
 
