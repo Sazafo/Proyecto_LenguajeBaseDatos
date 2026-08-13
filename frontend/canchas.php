@@ -31,7 +31,7 @@
 
         <section class="panel">
 
-            <h2>Registrar cancha</h2>
+            <h2 id="tituloFormulario">Registrar cancha</h2>
 
             <form id="formCancha">
 
@@ -48,6 +48,7 @@
                     <input
                         type="text"
                         id="nombreCancha"
+                        maxlength="60"
                         required
                     >
                 </div>
@@ -109,6 +110,7 @@
                         type="number"
                         id="capacidad"
                         min="1"
+                        max="99"
                         required
                     >
                 </div>
@@ -147,7 +149,10 @@
                     </select>
                 </div>
 
-                <button type="submit">
+                <button
+                    type="submit"
+                    id="btnGuardarCancha"
+                >
                     Guardar cancha
                 </button>
 

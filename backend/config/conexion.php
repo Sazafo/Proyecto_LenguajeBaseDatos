@@ -1,13 +1,17 @@
 <?php
 
-$usuarioOracle = "Admin";
-$contrasenaOracle = "LalaRemisa22*"; 
-$servidorOracle = "localhost/XEPDB1";
+header("Content-Type: application/json; charset=UTF-8");
+
+putenv("TNS_ADMIN=C:\\OracleWallet");
+
+$usuarioOracle = "ADMIN";
+$contrasenaOracle = "LalaRemisa22*";
+$servicioOracle = "dbadminoracle_low";
 
 $conexion = oci_connect(
     $usuarioOracle,
     $contrasenaOracle,
-    $servidorOracle,
+    $servicioOracle,
     "AL32UTF8"
 );
 
@@ -18,10 +22,9 @@ if (!$conexion) {
 
     echo json_encode([
         "exito" => false,
-        "mensaje" => "No se pudo conectar con Oracle",
+        "mensaje" => "No se pudo conectar con Oracle mediante el wallet.",
         "error" => $error["message"]
     ]);
 
     exit;
 }
-?>

@@ -2,13 +2,11 @@
 
 header("Content-Type: application/json; charset=UTF-8");
 
-require_once __DIR__ . "/conexion.php";
+require_once "conexion.php";
 
 echo json_encode([
     "exito" => true,
-    "mensaje" => "Conexión exitosa con Oracle"
+    "mensaje" => "Conexión exitosa con Oracle Cloud mediante wallet."
 ]);
 
-if (isset($conexion)) {
-    oci_close($conexion);
-}
+oci_close($conexion);
